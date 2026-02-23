@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: spicekart
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_PASS_HASH
+        sync: false
