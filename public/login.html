@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Login - SpiceKart</title>
     <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    />
   </head>
   <body>
     <header class="site-header">
@@ -14,14 +18,14 @@
           <p class="tag">Handpicked spices • Fresh • Organic</p>
         </div>
         <nav class="nav">
-          <a href="/">Home</a>
+          <a href="/"><i class="fa-solid fa-house icon"></i>Home</a>
         </nav>
       </div>
     </header>
 
     <main class="container">
       <section class="admin">
-        <h1>Login</h1>
+        <h1><i class="fa-solid fa-right-to-bracket icon"></i>Login</h1>
         <form id="loginForm" style="max-width: 420px">
           <label>
             Email
@@ -36,8 +40,12 @@
             <input type="password" id="password" required />
           </label>
           <div class="controls">
-            <button type="submit" class="btn">Sign in</button>
-            <a href="/" class="btn ghost">Cancel</a>
+            <button type="submit" class="btn">
+              <i class="fa-solid fa-user-check icon"></i>Sign in
+            </button>
+            <a href="/" class="btn ghost"
+              ><i class="fa-solid fa-xmark icon"></i>Cancel</a
+            >
           </div>
           <div
             id="loginError"

@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>SpiceKart - Mini E-commerce</title>
     <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    />
   </head>
   <body>
     <header class="site-header">
@@ -15,9 +19,13 @@
         </div>
         <div class="nav-left">
           <nav class="nav">
-            <a href="/">Home</a>
-            <a href="#productList">Products</a>
-            <a id="ordersLink" href="#">Orders</a>
+            <a href="/"><i class="fa-solid fa-house icon"></i>Home</a>
+            <a href="#productList"
+              ><i class="fa-solid fa-box-open icon"></i>Products</a
+            >
+            <a id="ordersLink" href="#"
+              ><i class="fa-solid fa-receipt icon"></i>Orders</a
+            >
           </nav>
         </div>
         <div class="nav-center">
@@ -33,20 +41,17 @@
         </div>
         <div class="nav-actions">
           <button id="cartBtn" class="btn">
-            Cart (<span id="cartCount">0</span>)
+            <i class="fa-solid fa-cart-shopping icon"></i>Cart (<span
+              id="cartCount"
+              >0</span
+            >)
           </button>
-          <a id="loginLink" class="btn ghost" href="/login.html">Login</a>
-          <button id="adminBtn" class="btn ghost">Admin</button>
-        </div>
-      </div>
-
-      <div class="container hero">
-        <div class="hero-left">
-          <h2>Warmth in every pinch</h2>
-          <p>Premium spices curated from trusted growers. Cook with love.</p>
-        </div>
-        <div class="hero-right">
-          <img src="/images/spices.jpg" alt="spices" />
+          <a id="loginLink" class="btn ghost" href="/login.html"
+            ><i class="fa-solid fa-user icon"></i>Login</a
+          >
+          <button id="adminBtn" class="btn ghost">
+            <i class="fa-solid fa-user-shield icon"></i>Admin
+          </button>
         </div>
       </div>
     </header>
@@ -81,7 +86,14 @@
               <a href="#productList" class="btn">Shop Now</a>
             </div>
             <div class="hero-images">
-              <img src="/images/spices.jpg" alt="spices" />
+              <img
+                src="/images/spices.jpg"
+                alt="spices"
+                loading="eager"
+                decoding="async"
+                width="260"
+                height="173"
+              />
             </div>
           </div>
 
@@ -114,7 +126,9 @@
         <div id="cartItems"></div>
         <div class="cart-summary">
           <strong>Total: ₹<span id="cartTotal">0</span></strong>
-          <button id="checkoutBtn">Checkout</button>
+          <button id="checkoutBtn" class="btn">
+            <i class="fa-solid fa-credit-card icon"></i>Checkout
+          </button>
         </div>
       </div>
     </div>
@@ -128,7 +142,10 @@
           <label>Name <input name="name" required /></label>
           <label>Address <textarea name="address" required></textarea></label>
           <label>Phone <input name="phone" required /></label>
-          <button type="submit">Place Order (Mock Payment)</button>
+          <button type="submit" class="btn">
+            <i class="fa-solid fa-circle-check icon"></i>Place Order (Mock
+            Payment)
+          </button>
         </form>
         <div id="checkoutMessage"></div>
       </div>

@@ -53,12 +53,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const el = document.getElementById("productDetail");
     el.innerHTML = `
       <div class="card product-card">
-        <div class="media"><img src="${imgSrc}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></div>
+        <div class="media"><img src="${imgSrc}" alt="${p.name}" loading="lazy" decoding="async" width="720" height="720" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></div>
         <div class="body">
           <h2 class="title">${p.name}</h2>
           <div class="price">₹${p.price}</div>
           <p class="desc">${p.description || ""}</p>
-          <div style="margin-top:1rem"><button class="btn" id="addBtn">Add to Cart</button> <a href="/checkout.html" class="btn ghost">Buy Now</a></div>
+          <div style="margin-top:1rem"><button class="btn" id="addBtn"><i class="fa-solid fa-cart-plus icon"></i>Add to Cart</button> <a href="/checkout.html" class="btn ghost"><i class="fa-solid fa-bolt icon"></i>Buy Now</a></div>
         </div>
       </div>
     `;

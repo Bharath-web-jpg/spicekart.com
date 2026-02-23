@@ -54,15 +54,15 @@ function renderProducts(list) {
     card.className = "card";
     const imgSrc = resolveImageSrc(p);
     card.innerHTML = `
-      <div class="media"><img src="${imgSrc}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></div>
+      <div class="media"><img src="${imgSrc}" alt="${p.name}" loading="lazy" decoding="async" width="480" height="320" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></div>
       <div class="body">
         <div class="title">${p.name}</div>
         <div class="desc">${p.description || ""}</div>
         <div class="meta">
           <div class="price">₹${p.price}</div>
           <div class="actions">
-            <button class="btn add" data-id="${p.id}">Add to cart</button>
-            <button class="btn ghost details" data-id="${p.id}">Details</button>
+            <button class="btn add" data-id="${p.id}"><i class="fa-solid fa-cart-plus icon"></i>Add to cart</button>
+            <button class="btn ghost details" data-id="${p.id}"><i class="fa-solid fa-circle-info icon"></i>Details</button>
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@ function renderCartItems() {
     }
     const row = document.createElement("div");
     row.className = "cart-row";
-    row.innerHTML = `<div>${p.name} x ${ci.qty}</div><div>₹${ci.qty * p.price} <button data-id="${p.id}" class="remove">Remove</button></div>`;
+    row.innerHTML = `<div>${p.name} x ${ci.qty}</div><div>₹${ci.qty * p.price} <button data-id="${p.id}" class="remove btn ghost"><i class="fa-solid fa-trash icon"></i>Remove</button></div>`;
     container.appendChild(row);
     total += p.price * ci.qty;
   });

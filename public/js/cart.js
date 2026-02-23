@@ -57,23 +57,23 @@ async function renderCart() {
     row.style.alignItems = "center";
     row.innerHTML = `
       <div style="display:flex;gap:1rem;align-items:center">
-        <div style="width:120px;height:80px;overflow:hidden"><img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></div>
+        <div style="width:120px;height:80px;overflow:hidden"><img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover" loading="lazy" decoding="async" width="120" height="80" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></div>
         <div>
           <div class="title">${p.name}</div>
           <div class="small">₹${p.price}</div>
         </div>
       </div>
       <div style="display:flex;gap:.5rem;align-items:center">
-        <button class="btn" data-id="${p.id}" data-act="dec">-</button>
+        <button class="btn" data-id="${p.id}" data-act="dec"><i class="fa-solid fa-minus"></i></button>
         <div>${item.qty}</div>
-        <button class="btn" data-id="${p.id}" data-act="inc">+</button>
-        <button class="btn ghost" data-id="${p.id}" data-act="rem">Remove</button>
+        <button class="btn" data-id="${p.id}" data-act="inc"><i class="fa-solid fa-plus"></i></button>
+        <button class="btn ghost" data-id="${p.id}" data-act="rem"><i class="fa-solid fa-trash icon"></i>Remove</button>
       </div>
     `;
     container.appendChild(row);
     total += p.price * item.qty;
   });
-  summary.innerHTML = `<div class="card" style="padding:1rem;margin-top:1rem"><strong>Total: ₹${total}</strong> <a href="/checkout.html" class="btn">Checkout</a></div>`;
+  summary.innerHTML = `<div class="card" style="padding:1rem;margin-top:1rem"><strong>Total: ₹${total}</strong> <a href="/checkout.html" class="btn"><i class="fa-solid fa-credit-card icon"></i>Checkout</a></div>`;
 
   // handlers
   container.querySelectorAll("button").forEach((b) => {
