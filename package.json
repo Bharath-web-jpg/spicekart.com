@@ -1,0 +1,29 @@
+{
+  "name": "spicekart",
+  "version": "1.0.0",
+  "description": "SpiceKart - Mini e-commerce project for final year",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "hash-pass": "node scripts/hash-pass.js",
+    "setup-env": "node scripts/setup-env.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^4.22.1",
+    "express-rate-limit": "^8.2.1",
+    "express-session": "^1.19.0",
+    "multer": "^2.0.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

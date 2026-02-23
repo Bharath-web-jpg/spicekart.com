@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SpiceKart Admin</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="container admin">
+      <h1>Admin - Add Product</h1>
+      <form id="productForm" enctype="multipart/form-data">
+        <label>Product Name <input name="name" required /></label>
+        <label>Price <input name="price" type="number" required /></label>
+        <label
+          >Image URL <input name="image" placeholder="https://..."
+        /></label>
+        <label
+          >Or Upload Image
+          <input id="imageFile" name="imageFile" type="file" accept="image/*"
+        /></label>
+        <label>Category <input name="category" /></label>
+        <label>Description <textarea name="description"></textarea></label>
+        <button type="submit">Add Product</button>
+      </form>
+      <div id="adminMessage"></div>
+      <div id="adminLogin" style="margin-top: 1rem">
+        <h3>Administrator Login</h3>
+        <input id="adminPass" placeholder="Password" type="password" />
+        <button id="loginBtn">Login</button>
+        <button id="logoutBtn" style="display: none">Logout</button>
+      </div>
+      <hr />
+      <h2>Products</h2>
+      <div id="productControls" style="margin-bottom: 1rem">
+        <button id="refreshList">Refresh</button>
+        <span id="adminAlert" style="color: #b00020; margin-left: 1rem"></span>
+      </div>
+      <table
+        id="productTable"
+        border="0"
+        width="100%"
+        style="border-collapse: collapse"
+      >
+        <thead>
+          <tr style="background: #fff2e6">
+            <th>Image</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Category</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="productRows"></tbody>
+      </table>
+      <p><a href="/">Back to Shop</a></p>
+    </div>
+    <script>
+      async function login(pass) {
+        const res = await fetch("/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pass }),
+        });
+        return res.json();
+      }
+
+      document
+        .getElementById("loginBtn")
+        .addEventListener("click", async () => {
+          const pass = document.getElementById("adminPass").value;
+          const r = await login(pass);
+          if (r.success) {
+            document.getElementById("loginBtn").style.display = "none";
+            document.getElementById("logoutBtn").style.display = "inline";
+            alert("Logged in");
+            loadProducts();
+          } else alert("Login failed");
+        });
+
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", async () => {
+          await fetch("/admin/logout", { method: "POST" });
+          document.getElementById("logoutBtn").style.display = "none";
+          document.getElementById("loginBtn").style.display = "inline";
+          alert("Logged out");
+        });
+
+      // Image preview and validation
+      document.getElementById("imageFile").addEventListener("change", (ev) => {
+        const f = ev.target.files[0];
+        let preview = document.getElementById("imgPreview");
+        if (!preview) {
+          preview = document.createElement("img");
+          preview.id = "imgPreview";
+          preview.style.maxWidth = "120px";
+          preview.style.display = "block";
+          preview.style.marginTop = "8px";
+          ev.target.parentNode.appendChild(preview);
+        }
+        if (f) {
+          if (!["image/jpeg", "image/png", "image/jpg"].includes(f.type)) {
+            alert("Only JPG/PNG allowed");
+            ev.target.value = "";
+            return;
+          }
+          if (f.size > 2 * 1024 * 1024) {
+            alert("Max 2MB");
+            ev.target.value = "";
+            return;
+          }
+          const url = URL.createObjectURL(f);
+          preview.src = url;
+        }
+      });
+
+      document
+        .getElementById("refreshList")
+        .addEventListener("click", loadProducts);
+
+      async function loadProducts() {
+        try {
+          const res = await fetch("/api/products");
+          const list = await res.json();
+          const tbody = document.getElementById("productRows");
+          tbody.innerHTML = "";
+          list.forEach((p) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td style="padding:8px"><img src="${p.image || "/css/placeholder.png"}" style="width:80px;height:60px;object-fit:cover;border-radius:6px"/></td><td>${p.name}</td><td>₹${p.price}</td><td>${p.category || ""}</td><td><button data-id="${p.id}" class="editBtn">Edit</button> <button data-id="${p.id}" class="delBtn">Delete</button></td>`;
+            tbody.appendChild(tr);
+          });
+          // attach handlers after render
+          document.querySelectorAll(".delBtn").forEach((btn) =>
+            btn.addEventListener("click", async (ev) => {
+              if (!confirm("Delete this product?")) return;
+              const id = ev.target.getAttribute("data-id");
+              const r = await fetch("/api/products/" + id, {
+                method: "DELETE",
+              });
+              const j = await r.json();
+              if (j.success) loadProducts();
+              else alert("Delete failed: " + (j.error || ""));
+            }),
+          );
+          document.querySelectorAll(".editBtn").forEach((btn) =>
+            btn.addEventListener("click", async (ev) => {
+              const id = ev.target.getAttribute("data-id");
+              const r = await fetch("/api/products/" + id);
+              const p = await r.json();
+              document.querySelector('[name="name"]').value = p.name;
+              document.querySelector('[name="price"]').value = p.price;
+              document.querySelector('[name="category"]').value = p.category;
+              document.querySelector('[name="description"]').value =
+                p.description;
+              document.querySelector('[name="image"]').value = p.image;
+              document
+                .getElementById("productForm")
+                .setAttribute("data-edit-id", id);
+              window.scrollTo(0, 0);
+            }),
+          );
+        } catch (e) {
+          console.error(e);
+          document.getElementById("adminAlert").innerText =
+            "Could not load products";
+        }
+      }
+
+      loadProducts();
+
+      document
+        .getElementById("productForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const editId = e.target.getAttribute("data-edit-id");
+          const fd = new FormData();
+          fd.append("name", e.target.name.value);
+          fd.append("price", e.target.price.value);
+          fd.append("category", e.target.category.value);
+          fd.append("description", e.target.description.value);
+          // upload file if provided
+          const file = document.getElementById("imageFile").files[0];
+          if (file) {
+            const up = new FormData();
+            up.append("image", file);
+            const r = await fetch("/admin/upload", {
+              method: "POST",
+              body: up,
+            });
+            const j = await r.json();
+            if (j.url) fd.append("image", j.url);
+            else {
+              alert("Upload failed");
+              return;
+            }
+          } else if (e.target.image.value) {
+            fd.append("image", e.target.image.value);
+          }
+
+          const payload = {
+            name: fd.get("name"),
+            price: Number(fd.get("price")),
+            image: fd.get("image"),
+            category: fd.get("category"),
+            description: fd.get("description"),
+          };
+
+          if (editId) {
+            const res = await fetch("/api/products/" + editId, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            document.getElementById("adminMessage").innerText = data.error
+              ? "Error: " + data.error
+              : "Product updated";
+            e.target.removeAttribute("data-edit-id");
+          } else {
+            const res = await fetch("/api/products", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            document.getElementById("adminMessage").innerText = data.error
+              ? "Error: " + data.error
+              : "Product added";
+          }
+          e.target.reset();
+          const prev = document.getElementById("imgPreview");
+          if (prev) prev.src = "";
+          loadProducts();
+        });
+    </script>
+  </body>
+</html>

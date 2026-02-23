@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SpiceKart - Mini E-commerce</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <div class="brand">
+          <h1 class="logo">SpiceKart</h1>
+          <p class="tag">Handpicked spices • Fresh • Organic</p>
+        </div>
+        <div class="nav-left">
+          <nav class="nav">
+            <a href="/">Home</a>
+            <a href="#productList">Products</a>
+            <a id="ordersLink" href="#">Orders</a>
+          </nav>
+        </div>
+        <div class="nav-center">
+          <div class="search-wrap">
+            <input
+              id="search"
+              placeholder="Search spices, e.g. turmeric, cumin..."
+            />
+            <select id="categoryFilter">
+              <option value="">All Categories</option>
+            </select>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <button id="cartBtn" class="btn">
+            Cart (<span id="cartCount">0</span>)
+          </button>
+          <a id="loginLink" class="btn ghost" href="/login.html">Login</a>
+          <button id="adminBtn" class="btn ghost">Admin</button>
+        </div>
+      </div>
+
+      <div class="container hero">
+        <div class="hero-left">
+          <h2>Warmth in every pinch</h2>
+          <p>Premium spices curated from trusted growers. Cook with love.</p>
+        </div>
+        <div class="hero-right">
+          <img src="/images/spices.jpg" alt="spices" />
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="homepage">
+        <aside class="categories">
+          <div class="category-card">
+            <h3>Categories</h3>
+            <ul>
+              <li data-cat="">All</li>
+              <li data-cat="Powder">Powder</li>
+              <li data-cat="Whole">Whole</li>
+              <li data-cat="Blend">Blend</li>
+              <li data-cat="Dry Fruits">Dry Fruits</li>
+              <li data-cat="Seeds">Seeds</li>
+            </ul>
+          </div>
+          <div class="offer-card">
+            <h4>Special Offer</h4>
+            <p>Flat 15% off on first order • Use code WELCOME15</p>
+          </div>
+        </aside>
+
+        <section class="main-area">
+          <div class="hero-banner">
+            <div class="hero-text">
+              <h2>Warmth in every pinch</h2>
+              <p>
+                Premium spices curated from trusted growers. Cook with love.
+              </p>
+              <a href="#productList" class="btn">Shop Now</a>
+            </div>
+            <div class="hero-images">
+              <img src="/images/spices.jpg" alt="spices" />
+            </div>
+          </div>
+
+          <section class="products" id="productList"></section>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer site-footer-full">
+      <div class="container footer-inner">
+        <div>
+          <strong>About</strong>
+          <div class="small">
+            SpiceKart is a demo e-commerce app for premium spices.
+          </div>
+        </div>
+        <div>
+          <strong>Contact</strong>
+          <div class="small">support@spicekart.local</div>
+        </div>
+        <div>© SpiceKart 2026</div>
+      </div>
+    </footer>
+
+    <!-- Cart modal -->
+    <div id="cartModal" class="modal">
+      <div class="modal-content">
+        <span id="closeCart" class="close">×</span>
+        <h2>Your Cart</h2>
+        <div id="cartItems"></div>
+        <div class="cart-summary">
+          <strong>Total: ₹<span id="cartTotal">0</span></strong>
+          <button id="checkoutBtn">Checkout</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checkout modal -->
+    <div id="checkoutModal" class="modal">
+      <div class="modal-content">
+        <span id="closeCheckout" class="close">×</span>
+        <h2>Checkout</h2>
+        <form id="checkoutForm">
+          <label>Name <input name="name" required /></label>
+          <label>Address <textarea name="address" required></textarea></label>
+          <label>Phone <input name="phone" required /></label>
+          <button type="submit">Place Order (Mock Payment)</button>
+        </form>
+        <div id="checkoutMessage"></div>
+      </div>
+    </div>
+
+    <script src="/js/script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+[
+  {
+    "id": 1,
+    "name": "Turmeric Powder",
+    "price": 120,
+    "category": "Powder",
+    "image": "/images/spices.jpg",
+    "description": "Premium turmeric powder for cooking and health benefits. Earthy, warm and vibrant."
+  },
+  {
+    "id": 2,
+    "name": "Red Chili Powder",
+    "price": 90,
+    "category": "Powder",
+    "image": "/images/red.jpg",
+    "description": "Hot and fresh red chili powder to spice up dishes. Deep red heat."
+  },
+  {
+    "id": 3,
+    "name": "Garam Masala",
+    "price": 150,
+    "category": "Blend",
+    "image": "/images/garam.jpg",
+    "description": "Aromatic garam masala blend for rich flavor and warmth. Perfect finishing spice."
+  },
+  {
+    "id": 4,
+    "name": "Coriander Seeds",
+    "price": 80,
+    "category": "Whole",
+    "image": "/images/coriander.webp",
+    "description": "Whole coriander seeds for grinding and tempering. Citrusy and floral notes."
+  },
+  {
+    "id": 5,
+    "name": "Cumin Seeds",
+    "price": 95,
+    "category": "Whole",
+    "image": "/images/cumin.jpg",
+    "description": "Fragrant cumin seeds for authentic flavor. Nutty and aromatic."
+  },
+  {
+    "id": 6,
+    "name": "Cinnamon (Sticks)",
+    "price": 110,
+    "category": "Whole",
+    "image": "/images/cinnamon.jpg",
+    "description": "Aromatic cinnamon sticks for desserts and masalas. Warm and sweet."
+  },
+  {
+    "id": 7,
+    "name": "Cloves",
+    "price": 130,
+    "category": "Whole",
+    "image": "/images/cloves.jpg",
+    "description": "Whole cloves for strong, warm flavor in savory and sweet dishes."
+  },
+  {
+    "id": 8,
+    "name": "Fennel Seeds",
+    "price": 85,
+    "category": "Whole",
+    "image": "/images/fennel.jpg",
+    "description": "Sweet fennel seeds for digestion and flavoring. Light anise notes."
+  },
+  {
+    "id": 9,
+    "name": "Mustard Seeds",
+    "price": 70,
+    "category": "Whole",
+    "image": "/images/mustard.jpg",
+    "description": "Spicy mustard seeds for tempering and pickles. Pungent and sharp."
+  },
+  {
+    "id": 10,
+    "name": "Black Peppercorns",
+    "price": 140,
+    "category": "Whole",
+    "image": "/images/pepper.jpeg",
+    "description": "Whole black peppercorns for freshly ground heat and aroma."
+  },
+  {
+    "id": 11,
+    "name": "Mixed Spice Pack",
+    "price": 200,
+    "category": "Pack",
+    "image": "/images/card.jpg",
+    "description": "Curated mixed spice pack — a sampler of essential spices."
+  }
+]

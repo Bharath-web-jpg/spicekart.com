@@ -1,0 +1,99 @@
+// cart page script
+const FALLBACK_IMAGE = "/images/card.jpg";
+
+function resolveImageSrc(product) {
+  if (!product || !product.image || !String(product.image).trim()) {
+    return FALLBACK_IMAGE;
+  }
+  const img = String(product.image).trim();
+  if (
+    img.startsWith("http://") ||
+    img.startsWith("https://") ||
+    img.startsWith("/")
+  ) {
+    return img;
+  }
+  return `/${img.replace(/^\/+/, "")}`;
+}
+
+function getCart() {
+  return JSON.parse(localStorage.getItem("spicekart_cart") || "[]");
+}
+function saveCart(c) {
+  localStorage.setItem("spicekart_cart", JSON.stringify(c));
+  renderCart();
+}
+
+async function fetchProductsMap() {
+  const res = await fetch("/api/products");
+  return (await res.json()).reduce((m, p) => {
+    m[p.id] = p;
+    return m;
+  }, {});
+}
+
+async function renderCart() {
+  const container = document.getElementById("cartContainer");
+  const summary = document.getElementById("cartSummary");
+  const cart = getCart();
+  const products = await fetchProductsMap();
+  if (cart.length === 0) {
+    container.innerHTML = "<p>Your cart is empty</p>";
+    summary.innerHTML = "";
+    return;
+  }
+  container.innerHTML = "";
+  let total = 0;
+  cart.forEach((item) => {
+    const p = products[item.id];
+    if (!p) {
+      return;
+    }
+    const imgSrc = resolveImageSrc(p);
+    const row = document.createElement("div");
+    row.className = "card";
+    row.style.display = "flex";
+    row.style.justifyContent = "space-between";
+    row.style.alignItems = "center";
+    row.innerHTML = `
+      <div style="display:flex;gap:1rem;align-items:center">
+        <div style="width:120px;height:80px;overflow:hidden"><img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></div>
+        <div>
+          <div class="title">${p.name}</div>
+          <div class="small">₹${p.price}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <button class="btn" data-id="${p.id}" data-act="dec">-</button>
+        <div>${item.qty}</div>
+        <button class="btn" data-id="${p.id}" data-act="inc">+</button>
+        <button class="btn ghost" data-id="${p.id}" data-act="rem">Remove</button>
+      </div>
+    `;
+    container.appendChild(row);
+    total += p.price * item.qty;
+  });
+  summary.innerHTML = `<div class="card" style="padding:1rem;margin-top:1rem"><strong>Total: ₹${total}</strong> <a href="/checkout.html" class="btn">Checkout</a></div>`;
+
+  // handlers
+  container.querySelectorAll("button").forEach((b) => {
+    b.addEventListener("click", () => {
+      const id = Number(b.getAttribute("data-id"));
+      const act = b.getAttribute("data-act");
+      const c = getCart();
+      const idx = c.findIndex((i) => i.id === id);
+      if (act === "inc") {
+        c[idx].qty += 1;
+      } else if (act === "dec") {
+        c[idx].qty = Math.max(1, c[idx].qty - 1);
+      } else if (act === "rem") {
+        c.splice(idx, 1);
+      }
+      saveCart(c);
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderCart();
+});

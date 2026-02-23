@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Checkout - SpiceKart</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <div class="brand">
+          <h1 class="logo">SpiceKart</h1>
+        </div>
+        <div class="nav-actions">
+          <a href="/cart.html" class="btn ghost">Back to Cart</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <h2>Checkout</h2>
+      <form id="checkoutForm">
+        <label>Name <input name="name" required /></label>
+        <label>Phone <input name="phone" required /></label>
+        <label>Pincode <input name="pincode" required /></label>
+        <label>Address <textarea name="address" required></textarea></label>
+
+        <h3>Payment Method</h3>
+        <label
+          ><input type="radio" name="payment" value="upi" checked /> UPI</label
+        >
+        <label><input type="radio" name="payment" value="card" /> Card</label>
+        <label
+          ><input type="radio" name="payment" value="cod" /> Cash on
+          Delivery</label
+        >
+
+        <button class="btn" type="submit">Place Order</button>
+      </form>
+
+      <div id="checkoutResult"></div>
+    </main>
+    <footer class="site-footer site-footer-full">
+      <div class="container footer-inner">
+        <div>
+          <strong>About</strong>
+          <div class="small">
+            SpiceKart is a demo e-commerce app for premium spices.
+          </div>
+        </div>
+        <div>
+          <strong>Contact</strong>
+          <div class="small">support@spicekart.local</div>
+        </div>
+        <div>© SpiceKart 2026</div>
+      </div>
+    </footer>
+
+    <script src="/js/checkout.js"></script>
+  </body>
+</html>

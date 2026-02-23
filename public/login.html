@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Login - SpiceKart</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <div class="brand">
+          <h1 class="logo">SpiceKart</h1>
+          <p class="tag">Handpicked spices • Fresh • Organic</p>
+        </div>
+        <nav class="nav">
+          <a href="/">Home</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="admin">
+        <h1>Login</h1>
+        <form id="loginForm" style="max-width: 420px">
+          <label>
+            Email
+            <input
+              type="email"
+              id="email"
+              placeholder="admin@spicekart.local"
+            />
+          </label>
+          <label>
+            Password
+            <input type="password" id="password" required />
+          </label>
+          <div class="controls">
+            <button type="submit" class="btn">Sign in</button>
+            <a href="/" class="btn ghost">Cancel</a>
+          </div>
+          <div
+            id="loginError"
+            class="small"
+            style="color: #b32d2d; margin-top: 8px"
+          ></div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>© SpiceKart 2026</div>
+      </div>
+    </footer>
+
+    <script>
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const password = document.getElementById("password").value;
+          const email = document.getElementById("email").value;
+          const res = await fetch("/admin/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password, email }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            document.getElementById("loginError").innerText =
+              data.error || "Login failed";
+          } else {
+            // on success, navigate to admin panel
+            window.location.href = "/admin.html";
+          }
+        });
+    </script>
+  </body>
+</html>
