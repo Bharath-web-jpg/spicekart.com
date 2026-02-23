@@ -1,6 +1,6 @@
 # SpiceKart — Spice Shopping Website (Improved)
 
-SpiceKart is a compact, production-style spice shopping website built with Node.js and Express on the backend and a responsive vanilla HTML/CSS/JS frontend. Data is persisted in JSON files for simplicity.
+SpiceKart is a compact, production-style spice shopping website built with Node.js and Express on the backend and a responsive vanilla HTML/CSS/JS frontend. Data is persisted in MongoDB.
 
 Features
 
@@ -30,17 +30,16 @@ npm start
 Project structure
 
 - `public/` — frontend assets (HTML/CSS/JS)
-- `data/` — JSON files: `products.json`, `orders.json`
+- `data/` — seed JSON files used for initial product import
 - `routes/` — Express route definitions
 - `controllers/` — route handlers, business logic
+- `db.js` — MongoDB connection and initial seeding logic
 - `server.js` — app entrypoint
 
 Notes
 
-- This project stores data in JSON files for demo/demo-viva purposes. For production, replace with a real database.
+- This project uses MongoDB for product and order persistence.
 - Product images are served from local files in `public/images` (plus optional admin uploads in `public/assets`).
-
-If you want, I can also wire up a small SQLite DB next.
 
 ## Admin password setup
 
@@ -60,6 +59,8 @@ The command will print a bcrypt hash. Copy that value into a `.env` file in the 
 ```
 ADMIN_PASS_HASH=$2b$10$...yourhash...
 SESSION_SECRET=change_this_session_secret
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_DB_NAME=spicekart
 PORT=4000
 ```
 
@@ -94,7 +95,8 @@ After running the above:
 
 1. Open `.env` and paste the `ADMIN_PASS_HASH` value into it.
 2. Set `SESSION_SECRET` to a strong random string.
-3. Start the server: `npm start`.
+3. Set `MONGODB_URI` and `MONGODB_DB_NAME`.
+4. Start the server: `npm start`.
 
 ## Testing the rate-limiter
 
@@ -108,6 +110,8 @@ After running the above:
 NODE_ENV=production
 SESSION_SECRET=your_long_random_secret
 ADMIN_PASS_HASH=your_bcrypt_hash
+MONGODB_URI=your_mongodb_connection_string
+MONGODB_DB_NAME=spicekart
 PORT=4000
 ```
 
@@ -140,6 +144,8 @@ git push -u origin main
   - `NODE_ENV=production`
   - `SESSION_SECRET=...`
   - `ADMIN_PASS_HASH=...` (or `ADMIN_PASS` for quick testing)
+  - `MONGODB_URI=...`
+  - `MONGODB_DB_NAME=spicekart`
 
 5. Deploy and open the generated URL:
 

@@ -1,61 +1,63 @@
-const sqlite3 = require("sqlite3").verbose();
+const { MongoClient } = require("mongodb");
 const path = require("path");
 const fs = require("fs");
 
-const DB_PATH = path.join(__dirname, "data", "spicekart.db");
 const PRODUCTS_JSON = path.join(__dirname, "data", "products.json");
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017";
+const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "spicekart";
 
-const db = new sqlite3.Database(DB_PATH);
+let client;
+let db;
 
-// Initialize schema and seed from products.json when empty
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL,
-      price REAL NOT NULL,
-      category TEXT,
-      description TEXT,
-      image TEXT
-    )
-  `);
+function normalizeProduct(product, index) {
+  return {
+    id: Number(product.id) || Date.now() + index,
+    name: product.name,
+    price: Number(product.price) || 0,
+    category: product.category || "",
+    description: product.description || "",
+    image: product.image || "",
+  };
+}
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id INTEGER PRIMARY KEY,
-      customer TEXT NOT NULL,
-      items TEXT NOT NULL,
-      createdAt TEXT NOT NULL
-    )
-  `);
+async function seedProductsIfEmpty(database) {
+  const productsCollection = database.collection("products");
+  const count = await productsCollection.countDocuments();
+  if (count > 0) return;
 
-  // seed products if table empty
-  db.get("SELECT COUNT(1) as c FROM products", (err, row) => {
-    if (err) return console.error("DB check error", err);
-    if (row && row.c === 0) {
-      try {
-        const raw = fs.readFileSync(PRODUCTS_JSON, "utf8");
-        const products = JSON.parse(raw || "[]");
-        const stmt = db.prepare(
-          "INSERT INTO products(id,name,price,category,description,image) VALUES(?,?,?,?,?,?)",
-        );
-        products.forEach((p) => {
-          stmt.run(
-            p.id || Date.now(),
-            p.name,
-            p.price,
-            p.category || "",
-            p.description || "",
-            p.image || "",
-          );
-        });
-        stmt.finalize();
-        console.log("Seeded products into SQLite DB");
-      } catch (e) {
-        console.error("Failed to seed products", e);
-      }
-    }
-  });
-});
+  const raw = fs.readFileSync(PRODUCTS_JSON, "utf8");
+  const products = JSON.parse(raw || "[]").map(normalizeProduct);
+  if (products.length === 0) return;
 
-module.exports = db;
+  await productsCollection.insertMany(products, { ordered: false });
+  console.log("Seeded products into MongoDB");
+}
+
+async function connectDB() {
+  if (db) return db;
+
+  client = new MongoClient(MONGODB_URI);
+  await client.connect();
+  db = client.db(MONGODB_DB_NAME);
+
+  await db.collection("products").createIndex({ id: 1 }, { unique: true });
+  await db.collection("orders").createIndex({ id: 1 }, { unique: true });
+  await seedProductsIfEmpty(db);
+
+  console.log(`Connected to MongoDB: ${MONGODB_DB_NAME}`);
+  return db;
+}
+
+function getDb() {
+  if (!db) {
+    throw new Error(
+      "MongoDB is not connected. Call connectDB() before getDb().",
+    );
+  }
+  return db;
+}
+
+module.exports = {
+  connectDB,
+  getDb,
+};

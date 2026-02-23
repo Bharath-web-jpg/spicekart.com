@@ -42,7 +42,11 @@
       </div>
       <hr />
       <h2><i class="fa-solid fa-box-open icon"></i>Products</h2>
-      <div id="productControls" style="margin-bottom: 1rem">
+      <div
+        id="productControls"
+        class="admin-toolbar"
+        style="margin-bottom: 1rem"
+      >
         <button id="refreshList">
           <i class="fa-solid fa-rotate icon"></i>Refresh
         </button>
@@ -50,6 +54,7 @@
       </div>
       <table
         id="productTable"
+        class="admin-table"
         border="0"
         width="100%"
         style="border-collapse: collapse"
@@ -65,11 +70,59 @@
         </thead>
         <tbody id="productRows"></tbody>
       </table>
+      <hr />
+      <h2><i class="fa-solid fa-receipt icon"></i>Recent Orders</h2>
+      <div id="orderControls" class="admin-toolbar" style="margin-bottom: 1rem">
+        <button id="refreshOrders">
+          <i class="fa-solid fa-rotate icon"></i>Refresh Orders
+        </button>
+        <span id="orderAlert" style="color: #b00020; margin-left: 1rem"></span>
+      </div>
+      <table
+        class="admin-table"
+        border="0"
+        width="100%"
+        style="border-collapse: collapse"
+      >
+        <thead>
+          <tr style="background: #fff2e6">
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total Qty</th>
+            <th>Created</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="orderRows"></tbody>
+      </table>
       <p>
         <a href="/"><i class="fa-solid fa-store icon"></i>Back to Shop</a>
       </p>
     </div>
     <script>
+      let productsIndex = new Map();
+      let productsLoadedAt = 0;
+
+      function buildProductsIndex(list) {
+        productsIndex = new Map(
+          (list || []).map((product) => [Number(product.id), product]),
+        );
+        productsLoadedAt = Date.now();
+      }
+
+      async function ensureProductsIndex() {
+        if (productsIndex.size > 0) return;
+        try {
+          const res = await fetch("/api/products");
+          if (!res.ok) return;
+          const list = await res.json();
+          buildProductsIndex(list);
+        } catch (e) {
+          // ignore and fallback to unknown items
+        }
+      }
+
       async function login(pass) {
         const res = await fetch("/admin/login", {
           method: "POST",
@@ -89,6 +142,7 @@
             document.getElementById("logoutBtn").style.display = "inline";
             alert("Logged in");
             loadProducts();
+            loadOrders();
           } else alert("Login failed");
         });
 
@@ -132,11 +186,15 @@
       document
         .getElementById("refreshList")
         .addEventListener("click", loadProducts);
+      document
+        .getElementById("refreshOrders")
+        .addEventListener("click", loadOrders);
 
       async function loadProducts() {
         try {
           const res = await fetch("/api/products");
           const list = await res.json();
+          buildProductsIndex(list);
           const tbody = document.getElementById("productRows");
           tbody.innerHTML = "";
           list.forEach((p) => {
@@ -182,6 +240,83 @@
       }
 
       loadProducts();
+
+      async function loadOrders() {
+        const alertEl = document.getElementById("orderAlert");
+        const tbody = document.getElementById("orderRows");
+        alertEl.innerText = "";
+        try {
+          await ensureProductsIndex();
+          const res = await fetch("/api/orders");
+          if (res.status === 403) {
+            tbody.innerHTML =
+              '<tr><td colspan="6" style="padding:8px">Login as admin to view orders</td></tr>';
+            return;
+          }
+          const orders = await res.json();
+          tbody.innerHTML = "";
+          if (!orders.length) {
+            tbody.innerHTML =
+              '<tr><td colspan="6" style="padding:8px">No orders yet</td></tr>';
+            return;
+          }
+
+          orders.forEach((o, index) => {
+            const customerName =
+              (o.customer && (o.customer.name || o.customer.phone)) || "Guest";
+            const items = Array.isArray(o.items) ? o.items : [];
+            const totalQty = items.reduce(
+              (sum, item) => sum + (item.qty || 0),
+              0,
+            );
+            const created = o.createdAt
+              ? new Date(o.createdAt).toLocaleString()
+              : "";
+            const detailId = `order-details-${o.id}-${index}`;
+            const itemsTable = items.length
+              ? `<table class="order-items-table"><thead><tr><th>Product</th><th class="item-price">Price</th><th class="item-qty">Qty</th></tr></thead><tbody>${items
+                  .map((item) => {
+                    const product = productsIndex.get(Number(item.id));
+                    const name = product ? product.name : "Unknown product";
+                    const price = product ? `₹${product.price}` : "-";
+                    const idLabel = item.id
+                      ? `<div class="small">#${item.id}</div>`
+                      : "";
+                    return `<tr><td class="item-name">${name}${idLabel}</td><td class="item-price">${price}</td><td class="item-qty">${item.qty || 0}</td></tr>`;
+                  })
+                  .join("")}</tbody></table>`
+              : '<div class="small">No items in this order.</div>';
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td style="padding:8px">${o.id}</td><td>${customerName}</td><td>${items.length}</td><td>${totalQty}</td><td>${created}</td><td><button class="btn ghost small toggle-details" data-target="${detailId}" aria-expanded="false"><i class="fa-solid fa-chevron-down icon"></i>View Items</button></td>`;
+            tbody.appendChild(tr);
+
+            const detailRow = document.createElement("tr");
+            detailRow.className = "order-details-row";
+            detailRow.innerHTML = `<td colspan="6"><div id="${detailId}" class="order-details"><div class="order-items">${itemsTable}</div></div></td>`;
+            tbody.appendChild(detailRow);
+          });
+
+          tbody.querySelectorAll(".toggle-details").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const targetId = btn.getAttribute("data-target");
+              const detail = document.getElementById(targetId);
+              if (!detail) return;
+              const isOpen = detail.classList.toggle("open");
+              detail.style.maxHeight = isOpen
+                ? `${detail.scrollHeight}px`
+                : "0px";
+              btn.setAttribute("aria-expanded", String(isOpen));
+              btn.innerHTML = isOpen
+                ? '<i class="fa-solid fa-chevron-up icon"></i>Hide Items'
+                : '<i class="fa-solid fa-chevron-down icon"></i>View Items';
+            });
+          });
+        } catch (e) {
+          alertEl.innerText = "Could not load orders";
+        }
+      }
+
+      loadOrders();
 
       document
         .getElementById("productForm")

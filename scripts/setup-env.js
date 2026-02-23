@@ -22,5 +22,5 @@ if (fs.existsSync(dest) && !force) {
 fs.copyFileSync(src, dest);
 console.log(".env created from .env.example");
 console.log(
-  "Edit .env and fill ADMIN_PASS_HASH (recommended) or ADMIN_PASS, then restart the server.",
+  "Edit .env and fill ADMIN_PASS_HASH (recommended) or ADMIN_PASS plus MONGODB_URI/MONGODB_DB_NAME, then restart the server.",
 );

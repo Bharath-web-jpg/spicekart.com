@@ -4,6 +4,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
+const { connectDB } = require("./db");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -40,6 +41,16 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(PORT, () =>
-  console.log(`Server running on http://localhost:${PORT}`),
-);
+async function startServer() {
+  try {
+    await connectDB();
+    app.listen(PORT, () =>
+      console.log(`Server running on http://localhost:${PORT}`),
+    );
+  } catch (error) {
+    console.error("Failed to start server", error);
+    process.exit(1);
+  }
+}
+
+startServer();
