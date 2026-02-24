@@ -59,7 +59,7 @@ The command will print a bcrypt hash. Copy that value into a `.env` file in the 
 ```
 ADMIN_PASS_HASH=$2b$10$...yourhash...
 SESSION_SECRET=change_this_session_secret
-MONGODB_URI=mongodb://127.0.0.1:27017
+MONGO_URI=mongodb+srv://<user>:<pass>@<cluster-url>/spicekart?retryWrites=true&w=majority
 MONGODB_DB_NAME=spicekart
 PORT=4000
 ```
@@ -91,11 +91,17 @@ npm run setup-env
 npm run setup-env -- --force
 ```
 
+- Create/update a MongoDB app user with `readWrite` access on your app DB:
+
+```bash
+MONGO_APP_USER=spicekart_app MONGO_APP_PASS=strong_password npm run create-mongo-user
+```
+
 After running the above:
 
 1. Open `.env` and paste the `ADMIN_PASS_HASH` value into it.
 2. Set `SESSION_SECRET` to a strong random string.
-3. Set `MONGODB_URI` and `MONGODB_DB_NAME`.
+3. Set `MONGO_URI` and `MONGODB_DB_NAME`.
 4. Start the server: `npm start`.
 
 ## Testing the rate-limiter
@@ -110,9 +116,8 @@ After running the above:
 NODE_ENV=production
 SESSION_SECRET=your_long_random_secret
 ADMIN_PASS_HASH=your_bcrypt_hash
-MONGODB_URI=your_mongodb_connection_string
+MONGO_URI=your_mongodb_connection_string
 MONGODB_DB_NAME=spicekart
-PORT=4000
 ```
 
 Note: Render injects `PORT` automatically in production; keep app code using `process.env.PORT`.
@@ -144,7 +149,7 @@ git push -u origin main
   - `NODE_ENV=production`
   - `SESSION_SECRET=...`
   - `ADMIN_PASS_HASH=...` (or `ADMIN_PASS` for quick testing)
-  - `MONGODB_URI=...`
+  - `MONGO_URI=...`
   - `MONGODB_DB_NAME=spicekart`
 
 5. Deploy and open the generated URL:

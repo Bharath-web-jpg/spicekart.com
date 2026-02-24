@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 
 const PRODUCTS_JSON = path.join(__dirname, "data", "products.json");
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017";
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "spicekart";
 
 let client;
@@ -36,16 +36,34 @@ async function seedProductsIfEmpty(database) {
 async function connectDB() {
   if (db) return db;
 
-  client = new MongoClient(MONGODB_URI);
-  await client.connect();
-  db = client.db(MONGODB_DB_NAME);
+  if (!MONGO_URI) {
+    console.warn(
+      "MongoDB URI not provided. Set MONGO_URI (or MONGODB_URI) to your MongoDB Atlas connection string.",
+    );
+    return null;
+  }
 
-  await db.collection("products").createIndex({ id: 1 }, { unique: true });
-  await db.collection("orders").createIndex({ id: 1 }, { unique: true });
-  await seedProductsIfEmpty(db);
+  try {
+    client = new MongoClient(MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    await client.connect();
+    db = client.db(MONGODB_DB_NAME);
 
-  console.log(`Connected to MongoDB: ${MONGODB_DB_NAME}`);
-  return db;
+    await db.collection("products").createIndex({ id: 1 }, { unique: true });
+    await db.collection("orders").createIndex({ id: 1 }, { unique: true });
+    await seedProductsIfEmpty(db);
+
+    console.log(`Connected to MongoDB: ${MONGODB_DB_NAME}`);
+    return db;
+  } catch (error) {
+    console.error(
+      "MongoDB connection failed. Running without DB.",
+      error.message,
+    );
+    db = null;
+    return null;
+  }
 }
 
 function getDb() {
@@ -57,7 +75,12 @@ function getDb() {
   return db;
 }
 
+function isDbConnected() {
+  return !!db;
+}
+
 module.exports = {
   connectDB,
   getDb,
+  isDbConnected,
 };

@@ -54,10 +54,10 @@ router.post("/login", loginLimiter, async (req, res) => {
         return res.json({ success: true });
       }
     }
-    // fallback insecure default
-    if (!hash && !plain && password === "admin123") {
-      req.session.isAdmin = true;
-      return res.json({ success: true });
+    if (!hash && !plain) {
+      return res
+        .status(500)
+        .json({ error: "Admin password is not configured" });
     }
     return res.status(403).json({ error: "Invalid password" });
   } catch (e) {

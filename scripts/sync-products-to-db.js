@@ -1,3 +1,4 @@
+require("dotenv").config();
 const { connectDB, getDb } = require("../db");
 const fs = require("fs");
 const path = require("path");
