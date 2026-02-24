@@ -1,6 +1,25 @@
 // product detail page script
 const FALLBACK_IMAGE = "/images/card.jpg";
 
+function renderSpinner(target, text = "Loading...") {
+  if (!target) return;
+  target.innerHTML = `<div class="status loading"><span class="spinner" aria-hidden="true"></span><span>${text}</span></div>`;
+}
+
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  let body = null;
+  try {
+    body = await res.json();
+  } catch (error) {
+    body = null;
+  }
+  if (!res.ok) {
+    throw new Error(body?.error || "Product not found");
+  }
+  return body;
+}
+
 function resolveImageSrc(product) {
   if (!product || !product.image || !String(product.image).trim()) {
     return FALLBACK_IMAGE;
@@ -17,9 +36,7 @@ function resolveImageSrc(product) {
 }
 
 async function fetchProduct(id) {
-  const res = await fetch(`/api/products/${id}`);
-  if (!res.ok) throw new Error("Product not found");
-  return await res.json();
+  return fetchJson(`/api/products/${id}`);
 }
 
 function getCart() {
@@ -41,16 +58,19 @@ function addToCart(id) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const detailEl = document.getElementById("productDetail");
+  renderSpinner(detailEl, "Loading product...");
+
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
   if (!id) {
-    document.getElementById("productDetail").innerText = "No product selected";
+    detailEl.innerText = "No product selected";
     return;
   }
   try {
     const p = await fetchProduct(id);
     const imgSrc = resolveImageSrc(p);
-    const el = document.getElementById("productDetail");
+    const el = detailEl;
     el.innerHTML = `
       <div class="card product-card">
         <div class="media"><img src="${imgSrc}" alt="${p.name}" loading="lazy" decoding="async" width="720" height="720" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></div>
@@ -68,6 +88,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const cart = getCart();
     saveCart(cart);
   } catch (e) {
-    document.getElementById("productDetail").innerText = "Product not found";
+    detailEl.innerText = e.message || "Product not found";
   }
 });

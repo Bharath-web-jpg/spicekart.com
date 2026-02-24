@@ -1,5 +1,30 @@
 // cart page script
 const FALLBACK_IMAGE = "/images/card.jpg";
+let productsMapPromise = null;
+
+function renderStatus(target, message, type = "info") {
+  if (!target) return;
+  target.innerHTML = `<div class="status ${type}">${message}</div>`;
+}
+
+function renderSpinner(target, text = "Loading...") {
+  if (!target) return;
+  target.innerHTML = `<div class="status loading"><span class="spinner" aria-hidden="true"></span><span>${text}</span></div>`;
+}
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    payload = null;
+  }
+  if (!response.ok) {
+    throw new Error(payload?.error || `Request failed (${response.status})`);
+  }
+  return payload;
+}
 
 function resolveImageSrc(product) {
   if (!product || !product.image || !String(product.image).trim()) {
@@ -25,20 +50,41 @@ function saveCart(c) {
 }
 
 async function fetchProductsMap() {
-  const res = await fetch("/api/products");
-  return (await res.json()).reduce((m, p) => {
-    m[p.id] = p;
-    return m;
-  }, {});
+  if (!productsMapPromise) {
+    productsMapPromise = fetchJson("/api/products")
+      .then((list) =>
+        (list || []).reduce((map, product) => {
+          map[product.id] = product;
+          return map;
+        }, {}),
+      )
+      .catch((error) => {
+        productsMapPromise = null;
+        throw error;
+      });
+  }
+  return productsMapPromise;
 }
 
 async function renderCart() {
   const container = document.getElementById("cartContainer");
   const summary = document.getElementById("cartSummary");
   const cart = getCart();
-  const products = await fetchProductsMap();
+  renderSpinner(container, "Loading cart...");
+  let products = {};
+  try {
+    products = await fetchProductsMap();
+  } catch (error) {
+    renderStatus(
+      container,
+      "Could not load cart products. Please refresh.",
+      "error",
+    );
+    summary.innerHTML = "";
+    return;
+  }
   if (cart.length === 0) {
-    container.innerHTML = "<p>Your cart is empty</p>";
+    renderStatus(container, "Your cart is empty", "empty");
     summary.innerHTML = "";
     return;
   }
@@ -47,6 +93,10 @@ async function renderCart() {
   cart.forEach((item) => {
     const p = products[item.id];
     if (!p) {
+      const row = document.createElement("div");
+      row.className = "card";
+      row.innerHTML = `<div class="body"><div class="title">Unknown product</div><div class="small">This product is no longer available.</div></div>`;
+      container.appendChild(row);
       return;
     }
     const imgSrc = resolveImageSrc(p);

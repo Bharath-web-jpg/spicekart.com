@@ -8,6 +8,9 @@ Features
 - Search and filter by category/price
 - Add to cart, view/remove items, and checkout (mock)
 - Admin page to add products (image URL supported)
+- Loading states and friendly empty/error messages on product/cart/checkout views
+- Admin order tools: View Items toggle and Export Orders CSV
+- Health endpoint for platform probes: `GET /health`
 - REST APIs: `GET /api/products`, `POST /api/products`, `POST /api/orders`
 
 Getting started
@@ -74,6 +77,7 @@ Note: `.env.example` has the suggested keys; copy it to `.env` and fill values.
 
 - The `/admin/login` endpoint is protected with rate-limiting (5 attempts per 15 minutes per IP). This mitigates brute-force attacks.
 - Sessions use `httpOnly` and `sameSite=lax`. In production, set `NODE_ENV=production` and a strong `SESSION_SECRET` so cookies are marked `secure`.
+- In production, server startup now fails fast if `SESSION_SECRET` is missing/default to avoid weak session configuration.
 
 ## Setup helper scripts
 

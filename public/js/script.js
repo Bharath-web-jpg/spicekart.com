@@ -7,8 +7,34 @@ const api = {
 };
 
 let products = [];
+let productsRequest = null;
 
 const FALLBACK_IMAGE = "/images/card.jpg";
+
+function renderStatus(target, message, type = "info") {
+  if (!target) return;
+  target.innerHTML = `<div class="status ${type}">${message}</div>`;
+}
+
+function renderSpinner(target, text = "Loading...") {
+  if (!target) return;
+  target.innerHTML = `<div class="status loading"><span class="spinner" aria-hidden="true"></span><span>${text}</span></div>`;
+}
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    payload = null;
+  }
+  if (!response.ok) {
+    const message = payload?.error || `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+  return payload;
+}
 
 function resolveImageSrc(product) {
   if (!product || !product.image || !String(product.image).trim()) {
@@ -40,14 +66,34 @@ function updateCartCount() {
 
 async function fetchProducts() {
   const el = document.getElementById("productList");
-  if (el) el.innerHTML = `<div class="small">Loading products…</div>`;
-  const res = await fetch(api.products);
-  products = await res.json();
-  renderProducts(products);
+  renderSpinner(el, "Loading products...");
+
+  if (!productsRequest) {
+    productsRequest = fetchJson(api.products).finally(() => {
+      productsRequest = null;
+    });
+  }
+
+  try {
+    products = await productsRequest;
+    renderProducts(products);
+  } catch (error) {
+    products = [];
+    renderStatus(
+      el,
+      "Could not load products right now. Please refresh.",
+      "error",
+    );
+  }
 }
 
 function renderProducts(list) {
   const el = document.getElementById("productList");
+  if (!el) return;
+  if (!Array.isArray(list) || list.length === 0) {
+    renderStatus(el, "No products available", "empty");
+    return;
+  }
   el.innerHTML = "";
   list.forEach((p) => {
     const card = document.createElement("div");
@@ -139,21 +185,25 @@ async function placeOrder(formData) {
   const cart = getCart();
   if (cart.length === 0) return alert("Cart is empty");
   const order = { customer: formData, items: cart };
-  const res = await fetch(api.orders, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(order),
-  });
-  const data = await res.json();
-  if (data.success) {
-    localStorage.removeItem("spicekart_cart");
-    updateCartCount();
-    document.getElementById("checkoutMessage").innerText =
-      "Order placed successfully. Order ID: " + data.orderId;
-    renderCartItems();
-  } else {
+  try {
+    const data = await fetchJson(api.orders, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(order),
+    });
+    if (data.success) {
+      localStorage.removeItem("spicekart_cart");
+      updateCartCount();
+      document.getElementById("checkoutMessage").innerText =
+        "Order placed successfully. Order ID: " + data.orderId;
+      renderCartItems();
+      return;
+    }
     document.getElementById("checkoutMessage").innerText =
       "Failed to place order";
+  } catch (error) {
+    document.getElementById("checkoutMessage").innerText =
+      error.message || "Failed to place order";
   }
 }
 
@@ -180,7 +230,7 @@ function setupFilters() {
 // Wire up UI
 document.addEventListener("DOMContentLoaded", async () => {
   await fetchProducts();
-  setupFilters();
+  if (products.length) setupFilters();
   updateCartCount();
 
   // wire cart and admin/login buttons (some may be anchors)

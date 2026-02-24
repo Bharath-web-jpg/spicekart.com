@@ -76,6 +76,9 @@
         <button id="refreshOrders">
           <i class="fa-solid fa-rotate icon"></i>Refresh Orders
         </button>
+        <button id="exportOrders" class="btn ghost small" type="button">
+          <i class="fa-solid fa-file-csv icon"></i>Export Orders CSV
+        </button>
         <span id="orderAlert" style="color: #b00020; margin-left: 1rem"></span>
       </div>
       <table
@@ -103,6 +106,40 @@
     <script>
       let productsIndex = new Map();
       let productsLoadedAt = 0;
+      let latestOrders = [];
+      const FALLBACK_IMAGE = "/images/card.jpg";
+
+      function renderSpinner(el, text = "Loading...") {
+        if (!el) return;
+        el.innerHTML = `<tr><td colspan="6" style="padding:12px"><div class="status loading"><span class="spinner" aria-hidden="true"></span><span>${text}</span></div></td></tr>`;
+      }
+
+      async function fetchJson(url, options = {}) {
+        const response = await fetch(url, options);
+        let body = null;
+        try {
+          body = await response.json();
+        } catch (error) {
+          body = null;
+        }
+        if (!response.ok) {
+          throw new Error(body?.error || `Request failed (${response.status})`);
+        }
+        return body;
+      }
+
+      function resolveImageSrc(path) {
+        if (!path || !String(path).trim()) return FALLBACK_IMAGE;
+        const value = String(path).trim();
+        if (
+          value.startsWith("http://") ||
+          value.startsWith("https://") ||
+          value.startsWith("/")
+        ) {
+          return value;
+        }
+        return `/${value.replace(/^\/+/, "")}`;
+      }
 
       function buildProductsIndex(list) {
         productsIndex = new Map(
@@ -114,9 +151,7 @@
       async function ensureProductsIndex() {
         if (productsIndex.size > 0) return;
         try {
-          const res = await fetch("/api/products");
-          if (!res.ok) return;
-          const list = await res.json();
+          const list = await fetchJson("/api/products");
           buildProductsIndex(list);
         } catch (e) {
           // ignore and fallback to unknown items
@@ -124,26 +159,31 @@
       }
 
       async function login(pass) {
-        const res = await fetch("/admin/login", {
+        return fetchJson("/admin/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ password: pass }),
         });
-        return res.json();
       }
 
       document
         .getElementById("loginBtn")
         .addEventListener("click", async () => {
           const pass = document.getElementById("adminPass").value;
-          const r = await login(pass);
-          if (r.success) {
-            document.getElementById("loginBtn").style.display = "none";
-            document.getElementById("logoutBtn").style.display = "inline";
-            alert("Logged in");
-            loadProducts();
-            loadOrders();
-          } else alert("Login failed");
+          try {
+            const r = await login(pass);
+            if (r.success) {
+              document.getElementById("loginBtn").style.display = "none";
+              document.getElementById("logoutBtn").style.display = "inline";
+              alert("Logged in");
+              loadProducts();
+              loadOrders();
+            } else {
+              alert("Login failed");
+            }
+          } catch (error) {
+            alert(error.message || "Login failed");
+          }
         });
 
       document
@@ -190,36 +230,53 @@
         .getElementById("refreshOrders")
         .addEventListener("click", loadOrders);
 
+      document
+        .getElementById("exportOrders")
+        .addEventListener("click", exportOrdersToCsv);
+
       async function loadProducts() {
+        const tbody = document.getElementById("productRows");
+        tbody.innerHTML =
+          '<tr><td colspan="5" style="padding:8px">Loading products...</td></tr>';
         try {
-          const res = await fetch("/api/products");
-          const list = await res.json();
+          const list = await fetchJson("/api/products");
           buildProductsIndex(list);
-          const tbody = document.getElementById("productRows");
+          if (!list.length) {
+            tbody.innerHTML =
+              '<tr><td colspan="5" style="padding:8px">No products available</td></tr>';
+            return;
+          }
           tbody.innerHTML = "";
           list.forEach((p) => {
+            const src = resolveImageSrc(p.image);
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td style="padding:8px"><img src="${p.image || "/css/placeholder.png"}" style="width:80px;height:60px;object-fit:cover;border-radius:6px"/></td><td>${p.name}</td><td>₹${p.price}</td><td>${p.category || ""}</td><td><button data-id="${p.id}" class="editBtn"><i class="fa-solid fa-pen-to-square icon"></i>Edit</button> <button data-id="${p.id}" class="delBtn"><i class="fa-solid fa-trash icon"></i>Delete</button></td>`;
+            tr.innerHTML = `<td style="padding:8px"><img src="${src}" style="width:80px;height:60px;object-fit:cover;border-radius:6px" onerror="this.onerror=null;this.src='${FALLBACK_IMAGE}'"/></td><td>${p.name}</td><td>₹${p.price}</td><td>${p.category || ""}</td><td><button data-id="${p.id}" class="editBtn"><i class="fa-solid fa-pen-to-square icon"></i>Edit</button> <button data-id="${p.id}" class="delBtn"><i class="fa-solid fa-trash icon"></i>Delete</button></td>`;
             tbody.appendChild(tr);
           });
           // attach handlers after render
           document.querySelectorAll(".delBtn").forEach((btn) =>
             btn.addEventListener("click", async (ev) => {
               if (!confirm("Delete this product?")) return;
-              const id = ev.target.getAttribute("data-id");
-              const r = await fetch("/api/products/" + id, {
-                method: "DELETE",
-              });
-              const j = await r.json();
-              if (j.success) loadProducts();
-              else alert("Delete failed: " + (j.error || ""));
+              const button = ev.target.closest("button");
+              const id = button && button.getAttribute("data-id");
+              if (!id) return;
+              try {
+                const j = await fetchJson("/api/products/" + id, {
+                  method: "DELETE",
+                });
+                if (j.success) loadProducts();
+                else alert("Delete failed: " + (j.error || ""));
+              } catch (error) {
+                alert(error.message || "Delete failed");
+              }
             }),
           );
           document.querySelectorAll(".editBtn").forEach((btn) =>
             btn.addEventListener("click", async (ev) => {
-              const id = ev.target.getAttribute("data-id");
-              const r = await fetch("/api/products/" + id);
-              const p = await r.json();
+              const button = ev.target.closest("button");
+              const id = button && button.getAttribute("data-id");
+              if (!id) return;
+              const p = await fetchJson("/api/products/" + id);
               document.querySelector('[name="name"]').value = p.name;
               document.querySelector('[name="price"]').value = p.price;
               document.querySelector('[name="category"]').value = p.category;
@@ -245,6 +302,7 @@
         const alertEl = document.getElementById("orderAlert");
         const tbody = document.getElementById("orderRows");
         alertEl.innerText = "";
+        renderSpinner(tbody, "Loading orders...");
         try {
           await ensureProductsIndex();
           const res = await fetch("/api/orders");
@@ -253,15 +311,19 @@
               '<tr><td colspan="6" style="padding:8px">Login as admin to view orders</td></tr>';
             return;
           }
+          if (!res.ok) {
+            throw new Error("Could not load orders");
+          }
           const orders = await res.json();
+          latestOrders = Array.isArray(orders) ? orders : [];
           tbody.innerHTML = "";
-          if (!orders.length) {
+          if (!latestOrders.length) {
             tbody.innerHTML =
               '<tr><td colspan="6" style="padding:8px">No orders yet</td></tr>';
             return;
           }
 
-          orders.forEach((o, index) => {
+          latestOrders.forEach((o, index) => {
             const customerName =
               (o.customer && (o.customer.name || o.customer.phone)) || "Guest";
             const items = Array.isArray(o.items) ? o.items : [];
@@ -277,8 +339,12 @@
               ? `<table class="order-items-table"><thead><tr><th>Product</th><th class="item-price">Price</th><th class="item-qty">Qty</th></tr></thead><tbody>${items
                   .map((item) => {
                     const product = productsIndex.get(Number(item.id));
-                    const name = product ? product.name : "Unknown product";
-                    const price = product ? `₹${product.price}` : "-";
+                    const name =
+                      item.name || (product ? product.name : "Unknown product");
+                    const resolvedPrice =
+                      Number(item.price) ||
+                      (product ? Number(product.price) : 0);
+                    const price = resolvedPrice ? `₹${resolvedPrice}` : "-";
                     const idLabel = item.id
                       ? `<div class="small">#${item.id}</div>`
                       : "";
@@ -313,74 +379,147 @@
           });
         } catch (e) {
           alertEl.innerText = "Could not load orders";
+          latestOrders = [];
         }
       }
 
       loadOrders();
 
+      function escapeCsvValue(value) {
+        const text = String(value ?? "");
+        if (/[",\n]/.test(text)) {
+          return `"${text.replace(/"/g, '""')}"`;
+        }
+        return text;
+      }
+
+      function exportOrdersToCsv() {
+        if (!latestOrders.length) {
+          alert("No orders to export.");
+          return;
+        }
+        const rows = [
+          [
+            "Order ID",
+            "Customer",
+            "Phone",
+            "Created At",
+            "Product ID",
+            "Product Name",
+            "Price",
+            "Qty",
+          ],
+        ];
+
+        latestOrders.forEach((order) => {
+          const customer = order.customer || {};
+          const items = Array.isArray(order.items) ? order.items : [];
+          if (!items.length) {
+            rows.push([
+              order.id,
+              customer.name || "",
+              customer.phone || "",
+              order.createdAt || "",
+              "",
+              "",
+              "",
+              "",
+            ]);
+            return;
+          }
+          items.forEach((item) => {
+            rows.push([
+              order.id,
+              customer.name || "",
+              customer.phone || "",
+              order.createdAt || "",
+              item.id || "",
+              item.name || "Unknown product",
+              Number(item.price) || "",
+              item.qty || 0,
+            ]);
+          });
+        });
+
+        const csv = rows
+          .map((row) => row.map(escapeCsvValue).join(","))
+          .join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `spicekart-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
       document
         .getElementById("productForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
-          const editId = e.target.getAttribute("data-edit-id");
-          const fd = new FormData();
-          fd.append("name", e.target.name.value);
-          fd.append("price", e.target.price.value);
-          fd.append("category", e.target.category.value);
-          fd.append("description", e.target.description.value);
-          // upload file if provided
-          const file = document.getElementById("imageFile").files[0];
-          if (file) {
-            const up = new FormData();
-            up.append("image", file);
-            const r = await fetch("/admin/upload", {
-              method: "POST",
-              body: up,
-            });
-            const j = await r.json();
-            if (j.url) fd.append("image", j.url);
-            else {
-              alert("Upload failed");
-              return;
+          try {
+            const editId = e.target.getAttribute("data-edit-id");
+            const fd = new FormData();
+            fd.append("name", e.target.name.value);
+            fd.append("price", e.target.price.value);
+            fd.append("category", e.target.category.value);
+            fd.append("description", e.target.description.value);
+            // upload file if provided
+            const file = document.getElementById("imageFile").files[0];
+            if (file) {
+              const up = new FormData();
+              up.append("image", file);
+              const j = await fetchJson("/admin/upload", {
+                method: "POST",
+                body: up,
+              });
+              if (j.url) fd.append("image", j.url);
+              else {
+                alert("Upload failed");
+                return;
+              }
+            } else if (e.target.image.value) {
+              fd.append("image", e.target.image.value);
             }
-          } else if (e.target.image.value) {
-            fd.append("image", e.target.image.value);
-          }
 
-          const payload = {
-            name: fd.get("name"),
-            price: Number(fd.get("price")),
-            image: fd.get("image"),
-            category: fd.get("category"),
-            description: fd.get("description"),
-          };
+            const payload = {
+              name: fd.get("name"),
+              price: Number(fd.get("price")),
+              image: fd.get("image"),
+              category: fd.get("category"),
+              description: fd.get("description"),
+            };
 
-          if (editId) {
-            const res = await fetch("/api/products/" + editId, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-            document.getElementById("adminMessage").innerText = data.error
-              ? "Error: " + data.error
-              : "Product updated";
-            e.target.removeAttribute("data-edit-id");
-          } else {
-            const res = await fetch("/api/products", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-            document.getElementById("adminMessage").innerText = data.error
-              ? "Error: " + data.error
-              : "Product added";
+            if (editId) {
+              const data = await fetchJson("/api/products/" + editId, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              document.getElementById("adminMessage").innerText = data.error
+                ? "Error: " + data.error
+                : "Product updated";
+              e.target.removeAttribute("data-edit-id");
+            } else {
+              const data = await fetchJson("/api/products", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              document.getElementById("adminMessage").innerText = data.error
+                ? "Error: " + data.error
+                : "Product added";
+            }
+            e.target.reset();
+            const prev = document.getElementById("imgPreview");
+            if (prev) prev.src = "";
+            loadProducts();
+          } catch (error) {
+            document.getElementById("adminMessage").innerText =
+              error.message || "Could not save product";
           }
-          e.target.reset();
-          const prev = document.getElementById("imgPreview");
-          if (prev) prev.src = "";
-          loadProducts();
         });
     </script>
   </body>
