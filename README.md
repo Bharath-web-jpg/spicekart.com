@@ -162,3 +162,25 @@ git push -u origin main
 - Admin uploaded files should load from `/assets/...`
 
 If any image is broken, confirm the product record has an image path beginning with `/images/` or `/assets/`.
+
+## Optional: GitHub Action deploy hook (one-click future deploys)
+
+This repo includes a workflow at `.github/workflows/render-deploy-hook.yml` that triggers a Render Deploy Hook.
+
+1. In Render:
+
+- Open your Web Service → **Settings** → **Deploy Hook**
+- Create/copy a deploy hook URL
+
+2. In GitHub:
+
+- Open repo **Settings** → **Secrets and variables** → **Actions**
+- Add a new repository secret:
+  - `RENDER_DEPLOY_HOOK_URL` = your Render deploy hook URL
+
+3. Trigger deployment:
+
+- Automatic: every push to `main`
+- Manual: Actions tab → **Render Deploy Hook** → **Run workflow**
+
+If the secret is missing, the workflow fails with a clear error message.
