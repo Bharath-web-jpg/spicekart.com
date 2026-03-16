@@ -64,6 +64,16 @@ function updateCartCount() {
   document.getElementById("cartCount").innerText = count;
 }
 
+function normalizeOrderItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => ({
+      id: Number(item?.id),
+      qty: Math.max(1, Number(item?.qty ?? item?.quantity) || 0),
+    }))
+    .filter((item) => Number.isFinite(item.id) && item.qty > 0);
+}
+
 async function fetchProducts() {
   const el = document.getElementById("productList");
   renderSpinner(el, "Loading products...");
@@ -182,13 +192,25 @@ function closeCheckout() {
 }
 
 async function placeOrder(formData) {
-  const cart = getCart();
+  const cart = normalizeOrderItems(getCart());
   if (cart.length === 0) return alert("Cart is empty");
-  const order = { customer: formData, items: cart };
+  const items = cart.map((item) => ({
+    id: item.id,
+    qty: item.qty,
+    quantity: item.qty,
+  }));
+  const order = {
+    customer: formData,
+    name: formData?.name,
+    address: formData?.address,
+    phone: formData?.phone,
+    items,
+  };
   try {
     const data = await fetchJson(api.orders, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(order),
     });
     if (data.success) {
@@ -202,6 +224,10 @@ async function placeOrder(formData) {
     document.getElementById("checkoutMessage").innerText =
       "Failed to place order";
   } catch (error) {
+    console.error("[checkout] placeOrder failed", {
+      message: error?.message,
+      payload: order,
+    });
     document.getElementById("checkoutMessage").innerText =
       error.message || "Failed to place order";
   }

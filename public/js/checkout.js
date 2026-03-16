@@ -6,6 +6,16 @@ function clearCart() {
   localStorage.removeItem("spicekart_cart");
 }
 
+function normalizeOrderItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => ({
+      id: Number(item?.id),
+      qty: Math.max(1, Number(item?.qty ?? item?.quantity) || 0),
+    }))
+    .filter((item) => Number.isFinite(item.id) && item.qty > 0);
+}
+
 function renderStatus(target, message, type = "info") {
   if (!target) return;
   target.innerHTML = `<div class="status ${type}">${message}</div>`;
@@ -44,17 +54,29 @@ document.addEventListener("DOMContentLoaded", () => {
         address: fd.get("address"),
         payment: fd.get("payment"),
       };
-      const items = getCart();
+      const items = normalizeOrderItems(getCart());
       if (items.length === 0) {
         renderStatus(resultEl, "Cart is empty", "empty");
         return;
       }
-      const order = { customer: payload, items };
+      const normalizedItems = items.map((item) => ({
+        id: item.id,
+        qty: item.qty,
+        quantity: item.qty,
+      }));
+      const order = {
+        customer: payload,
+        name: payload.name,
+        address: payload.address,
+        phone: payload.phone,
+        items: normalizedItems,
+      };
       try {
         renderSpinner(resultEl, "Placing your order...");
         const data = await fetchJson("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(order),
         });
         if (data.success) {
@@ -64,6 +86,10 @@ document.addEventListener("DOMContentLoaded", () => {
           renderStatus(resultEl, "Failed to place order", "error");
         }
       } catch (error) {
+        console.error("[checkout-page] placeOrder failed", {
+          message: error?.message,
+          payload: order,
+        });
         renderStatus(
           resultEl,
           error.message || "Failed to place order",

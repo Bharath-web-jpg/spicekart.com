@@ -10,25 +10,59 @@ function sanitizeCustomer(customer) {
   };
 }
 
+function resolveCustomer(body) {
+  if (body?.customer && typeof body.customer === "object") {
+    return sanitizeCustomer(body.customer);
+  }
+
+  return sanitizeCustomer({
+    name: body?.name,
+    address: body?.address,
+    phone: body?.phone,
+    pincode: body?.pincode,
+    payment: body?.payment,
+  });
+}
+
 function normalizeOrderItems(items) {
   return items
     .map((item) => ({
       id: Number(item?.id),
-      qty: Math.max(1, Number(item?.qty) || 0),
+      qty: Math.max(1, Number(item?.qty ?? item?.quantity) || 0),
     }))
     .filter((item) => Number.isFinite(item.id) && item.qty > 0);
 }
 
 // Place order - basic validation and save to MongoDB
 exports.placeOrder = async (req, res) => {
-  const { customer, items } = req.body;
-  if (!customer || !items || !Array.isArray(items) || items.length === 0) {
+  const customer = resolveCustomer(req.body);
+  const items = req.body?.items;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    console.error("[orders] Invalid order payload", {
+      hasCustomer: Boolean(customer),
+      hasItemsArray: Array.isArray(items),
+      itemsCount: Array.isArray(items) ? items.length : 0,
+      bodyKeys: Object.keys(req.body || {}),
+    });
     return res.status(400).json({ error: "Invalid order payload" });
+  }
+
+  if (!customer.name || !customer.address || !customer.phone) {
+    console.error("[orders] Missing required customer fields", {
+      customer,
+    });
+    return res.status(400).json({
+      error: "Customer name, address, and phone are required",
+    });
   }
 
   try {
     const normalizedItems = normalizeOrderItems(items);
     if (normalizedItems.length === 0) {
+      console.error("[orders] No valid items after normalization", {
+        sampleItem: items[0] || null,
+      });
       return res.status(400).json({ error: "No valid items in order" });
     }
 
@@ -52,16 +86,24 @@ exports.placeOrder = async (req, res) => {
     });
 
     const id = Date.now();
-    await getDb()
-      .collection("orders")
-      .insertOne({
-        id,
-        customer: sanitizeCustomer(customer),
-        items: safeItems,
-        createdAt: new Date().toISOString(),
-      });
+    await getDb().collection("orders").insertOne({
+      id,
+      customer,
+      items: safeItems,
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log("[orders] Order placed", {
+      orderId: id,
+      itemCount: safeItems.length,
+      customerName: String(customer?.name || "").trim() || "Guest",
+    });
     res.status(201).json({ success: true, orderId: id });
   } catch (error) {
+    console.error("[orders] Could not place order", {
+      message: error?.message,
+      stack: error?.stack,
+    });
     return res.status(500).json({ error: "Could not place order" });
   }
 };
@@ -78,6 +120,10 @@ exports.listOrders = async (req, res) => {
 
     res.json(rows || []);
   } catch (error) {
+    console.error("[orders] Could not read orders", {
+      message: error?.message,
+      stack: error?.stack,
+    });
     return res.status(500).json({ error: "Could not read orders" });
   }
 };
